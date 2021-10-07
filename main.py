@@ -16,8 +16,8 @@ def main():
     print("Ranking of 0273651870 -> " + str(dp.get_rank('0273651870')))
     print("Similar of 0874850037 -> " + str(dp.get_similar('0874850037')))
 
-    yori = [[key] + val for key, val in dp.get_full_sim().items()]
-    print(list(ap(yori, min_support = 0.012, min_confidence=0.8)))
+    #yori = [[key] + val for key, val in dp.get_full_sim().items()]
+    #print(list(ap(yori, min_support = 0.012, min_confidence=0.8)))
 
 if __name__ == '__main__':
     main()
