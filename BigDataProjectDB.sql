@@ -25,6 +25,8 @@ CREATE TABLE category(
 	name VARCHAR(20),
 	head_category_id INT,
 );
+ALTER TABLE category
+ADD FOREIGN KEY (head_category_id) REFERENCES category(category_id);
 
 CREATE TABLE product_categories(
 	product_id INT,
