@@ -5,6 +5,7 @@ CREATE TABLE product(
 	title VARCHAR(100),
 	group_name VARCHAR(5) not null,
 	salesrank INT,
+	num_similar INT,
 	num_categories INT,
 	num_reviews INT,
 	num_downloaded_reviews INT,
@@ -13,7 +14,6 @@ CREATE TABLE product(
 
 CREATE TABLE similar_products(
 	product_id INT,
-	num_similar INT,
 	similar_ASIN CHAR(10),
 	CONSTRAINT pk_similar PRIMARY KEY (product_id, similar_ASIN),
 	CONSTRAINT fk_similar_productid FOREIGN KEY (product_id) REFERENCES product(ID),
