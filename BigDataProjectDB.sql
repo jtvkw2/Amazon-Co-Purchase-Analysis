@@ -24,7 +24,6 @@ CREATE TABLE category(
 	category_id INT PRIMARY KEY,
 	name VARCHAR(20),
 	head_category_id INT,
-	head_category_name VARCHAR(20)
 );
 
 CREATE TABLE product_categories(
