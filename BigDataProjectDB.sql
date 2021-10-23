@@ -1,3 +1,10 @@
+DROP table similar_products;
+DROP table product_categories;
+DROP table product_reviews;
+DROP table review;
+DROP table category;
+DROP table product;
+
 CREATE TABLE product(
 	ID INT PRIMARY KEY,
 	ASIN CHAR(10) not null UNIQUE,
@@ -22,7 +29,7 @@ CREATE TABLE similar_products(
 CREATE TABLE category(
 	category_id INT PRIMARY KEY,
 	name VARCHAR(20),
-	head_category_id INT,
+	head_category_id INT
 );
 ALTER TABLE category
 ADD FOREIGN KEY (head_category_id) REFERENCES category(category_id);
