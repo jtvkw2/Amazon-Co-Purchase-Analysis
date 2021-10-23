@@ -40,7 +40,7 @@ def process_data(file):
                 curr_name = line[7:]
                 name_dict[curr_asin] = curr_name
             if check_rank is not None:
-                curr_rank = line[12:]
+                curr_rank = line[11:]
                 rank_dict[curr_asin] = curr_rank
 
 
