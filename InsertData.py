@@ -167,11 +167,15 @@ def insert2ProdCat(conn):
                       'to the product_categories table!', '\n', e)
                 file.write(sql_str)
         conn.commit()
+      print("product categories have been inserted to product category table")
+      file.close()
+
 
 
 def insert2Review(conn):
     print('Inserting into review and product reviews table!')
     cur = conn.cursor()
+    file = open('FailedReviews', 'w')
     for id in id_list:
         if dp.get_reviews(id) is None:
             continue
@@ -196,6 +200,7 @@ def insert2Review(conn):
                 r_id = str(cur.fetchone()[0])
             except Exception as e:
                 print('Failed to insert review for ', str(id), ' in review table!', e)
+                file.write(sql_str)
             conn.commit()
 
             new_sql = "INSERT INTO product_reviews (product_id, review_id) " \
@@ -204,5 +209,7 @@ def insert2Review(conn):
                 cur.execute(new_sql, (str(id), r_id))
             except Exception as e:
                 print('Failed to insert review ', r_id, ' for product ', str(id), ' in product_reviews table!', e)
+                file.write(sql_str)
             conn.commit()
     print("reviews have been inserted to review and product reviews table")
+    file.close()
