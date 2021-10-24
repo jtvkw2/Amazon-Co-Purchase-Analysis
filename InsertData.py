@@ -98,33 +98,39 @@ def insert2Similar(conn):
 def insert2Category(conn):
     print('Inserting into category table!')
     cur =conn.cursor()
+    #file = open('FailedCat.txt', 'w')
     for item in dp.cat_dict.items():
         cat_item = item[1]
         cat = cat_item[0]
         head_cat = cat_item[1]
-        cat_name_match = re.findall(r'.*(?=\[)', cat)
+        cat_name_match = re.findall(r'\w*(?=\[)', cat)
         if cat_name_match:
             cat_name = cat_name_match[0]
-        else:
-            cat_name = ''
-        cat_num_match = re.findall(r'\[(.*)\]', cat)
+        cat_num_match = re.findall(r'\[(\d*)\]', cat)
         if cat_num_match:
             cat_num = cat_num_match[0]
-        else:
-            cat_num = -1
-        hcat_num_match = re.findall(r'\[(.*)\]', head_cat)
-        if hcat_num_match:
-            hcat_num = hcat_num_match[0]
-        else:
-            hcat_num = -1    
-        sql_str = "INSERT INTO category (category_id, name, head_category_id) " \
-                  "VALUES (" + str(cat_num) + ",'" + cleanStr4SQL(cat_name) + "'," \
-                             + str(hcat_num) + ");"
-        try:
-            cur.execute(sql_str)
-        except:
-            print('Failed to insert ', str(cat_num)), ' into category table!'
+            if cat_num not in unique_id:
+                unique_id.append(cat_num)
+                hcat_num_match = re.findall(r'\[(\d*)\]', head_cat)
+                if hcat_num_match:
+                    hcat_num = hcat_num_match[0]
+                else:
+                    hcat_num = None
+                sql_str = "INSERT INTO category (category_id, name, head_category_id) " \
+                          "VALUES (" + int2NAStr(cat_num) + ",'" + cleanStr4SQL(cat_name) + "'," \
+                          + int2NAStr(hcat_num) + ");"
+                try:
+                    cur.execute(sql_str)
+                except Exception as e:
+                    print('Failed to insert ', str(cat_num), ' into category table!', e)
+                    file.write(sql_str)
+                conn.commit()
+            else:
+                # print(cat_num, " already in category table")
+                continue
         conn.commit()
+    print("categories have been inserted to category table")
+    file.close()
 
 def insert2ProdCat(conn):
     print('Inserting into product category table!')
