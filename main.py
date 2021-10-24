@@ -11,7 +11,7 @@ import os
 
 def main():
     print("Processing Data...")
-    file = "/Users/chris24/Documents/WSU/Fall 2021/CPTS 415 /Project/Amazon-Co-Purchase-Analysis/test.txt"
+    file = "/test.txt" # just make sure .txt is in sam efolder as .py
     dp.process_data(file)
 
     # print("ASIN of 454888 ->", dp.get_asin('454888'))
