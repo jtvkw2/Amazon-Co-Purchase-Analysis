@@ -27,6 +27,11 @@ def int2BoolStr(value):
     else:
         return 'True'
 
+def int2NAStr(value):
+    if value is None:
+        value = "null"
+    return str(value)
+
 def insert2Product(conn):
     # When inserting into database, these work quite well, I think that we need to see if 
     # there are some special characters that need to be escaped to improve flow into the
@@ -57,8 +62,8 @@ def insert2Product(conn):
                            cleanStr4SQL(asin) + "','" + \
                            cleanStr4SQL(title) + "','" + \
                            cleanStr4SQL(group) + "'," + \
-                           str(rank) + "," + \
-                           str(rate) + ");"
+                           int2NAStr(rank) + "," + \
+                           int2NAStr(rate) + ");"
         print(sql_str)
         try:
             cur.execute(sql_str)
