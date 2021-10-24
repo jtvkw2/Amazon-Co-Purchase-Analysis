@@ -1,6 +1,6 @@
 '''
 This will insert the data into the PostgreSQL Database hosted on Amazon AWS.
-Will use the dictionaries created in "DataProcessing.py".
+Will use the dictionaries created in "DataProcessing.py". 
 Called by "main.py"
 Authors:    Abnormal Distribution Team
             Chris Mims
@@ -37,15 +37,9 @@ def int2NAStr(value):
 
 
 def insert2Product(conn):
-    # When inserting into database, these work quite well, I think that we need to see if
-    # there are some special characters that need to be escaped to improve flow into the
-    # database without droping items. I have it outputting a text file with rejected tuples.
-    # There are print statements to follow along. If you use test.txt (only 2000ish lines)
-    # It isn't too bad. Only 74 items are added to the database. With only 1 dropped tuple.
     print('Inserting into product table!')
     cur = conn.cursor()
-    file = open('FailedProduct.txt', 'w')
-
+    # file = open('FailedProduct.txt', 'w')
     for key in dp.asin_dict.keys():
         id = key
         asin = dp.asin_dict.get(key)
@@ -60,7 +54,6 @@ def insert2Product(conn):
             group = dp.get_group(id)
             rank = dp.get_rank(id)
             rate = dp.get_rating(id)
-
         sql_str = "INSERT INTO product (ID, ASIN, title, group_name, salesrank, avg_review_rating) " \
                   "VALUES (" + str(id) + ",'" + \
                   cleanStr4SQL(asin) + "','" + \
@@ -68,21 +61,20 @@ def insert2Product(conn):
                   cleanStr4SQL(group) + "'," + \
                   int2NAStr(rank) + "," + \
                   int2NAStr(rate) + ");"
-        # print(sql_str)
         try:
             cur.execute(sql_str)
         except Exception as e:
             print('Failed to insert ', str(id), ' in product table', '\n', e)
-            file.write(sql_str)
+            # file.write(sql_str)
         conn.commit()
     print("products have been inserted to product table")
-    file.close()
+    # file.close()
 
 
 def insert2Similar(conn):
     print('Inserting into similar table!')
     cur = conn.cursor()
-    file = open('FailedSim.txt', 'w')
+    # file = open('FailedSim.txt', 'w')
     for id in id_list:
         sim_list = dp.get_similar(id)
         if dp.get_similar(id) is None:
@@ -90,21 +82,20 @@ def insert2Similar(conn):
         for sim in sim_list:
             sql_str = "INSERT INTO similar_products (product_id, similar_ASIN) " \
                       "VALUES (" + str(id) + ",'" + cleanStr4SQL(sim) + "');"
-            # print(sql_str)
             try:
                 cur.execute(sql_str)
             except Exception as e:
                 print('Failed to insert ', str(id), ' in similar table', e)
-                file.write(sql_str)
+                # file.write(sql_str)
         conn.commit()
-    print("similar products have been inserted to the similar_products table")
-    file.close()
+    print("similar products have been inserted to similar_products table")
+    # file.close()
 
 
 def insert2Category(conn):
     print('Inserting into category table!')
     cur = conn.cursor()
-    file = open('FailedCat.txt', 'w')
+    # file = open('FailedCat.txt', 'w')
     unique_id = []
 
     for item in dp.cat_dict.items():
@@ -131,21 +122,19 @@ def insert2Category(conn):
                     cur.execute(sql_str)
                 except Exception as e:
                     print('Failed to insert ', str(cat_num), ' into category table!', e)
-                    file.write(sql_str)
+                    # file.write(sql_str)
                 conn.commit()
             else:
-                # print(cat_num, " already in category table")
                 continue
         conn.commit()
     print("categories have been inserted to category table")
-    file.close()
-
+    # file.close()
 
 
 def insert2ProdCat(conn):
     print('Inserting into product category table!')
     cur = conn.cursor()
-    file = open('FailedProdCat', 'w')
+    # file = open('FailedProdCat', 'w')
     for id in id_list:
         if dp.get_subcat(id) is None:
             continue
@@ -156,6 +145,8 @@ def insert2ProdCat(conn):
             sub_cat_num_match = re.findall(r'\[(.*)\]', item)
             if sub_cat_num_match:
                 sub_cat_num = sub_cat_num_match[0]
+                if sub_cat_num == "guitar][63054":
+                    sub_cat_num = 63054             # FIXME: very specific case I hardcoded in bc frustration
             else:
                 sub_cat_num = None
             sql_str = "INSERT INTO product_categories (product_id, category_id) " \
@@ -165,17 +156,15 @@ def insert2ProdCat(conn):
             except Exception as e:
                 print('Failed to insert ', str(id), "'s category ", str(sub_cat_num), \
                       'to the product_categories table!', '\n', e)
-                file.write(sql_str)
+                # file.write(sql_str)
         conn.commit()
-      print("product categories have been inserted to product category table")
-      file.close()
-
-
+      print("product categories have been inserted to product_category table")
+    # file.close()
 
 def insert2Review(conn):
     print('Inserting into review and product reviews table!')
     cur = conn.cursor()
-    file = open('FailedReviews', 'w')
+    # file = open('FailedReview', 'w')
     for id in id_list:
         if dp.get_reviews(id) is None:
             continue
@@ -200,16 +189,15 @@ def insert2Review(conn):
                 r_id = str(cur.fetchone()[0])
             except Exception as e:
                 print('Failed to insert review for ', str(id), ' in review table!', e)
-                file.write(sql_str)
+                # file.write(sql.str)
             conn.commit()
-
             new_sql = "INSERT INTO product_reviews (product_id, review_id) " \
                       "VALUES (%s,%s);"
             try:
                 cur.execute(new_sql, (str(id), r_id))
             except Exception as e:
                 print('Failed to insert review ', r_id, ' for product ', str(id), ' in product_reviews table!', e)
-                file.write(sql_str)
+                # file.write(sql.str)
             conn.commit()
     print("reviews have been inserted to review and product reviews table")
-    file.close()
+    # file.close()
