@@ -1,14 +1,9 @@
-DROP TABLE CATEGORIES;
 CREATE TABLE product(
 	ID INT PRIMARY KEY,
 	ASIN CHAR(10) not null UNIQUE,
 	title VARCHAR(100),
 	group_name VARCHAR(5) not null,
 	salesrank INT,
-	num_similar INT,
-	num_categories INT,
-	num_reviews INT,
-	num_downloaded_reviews INT,
 	avg_review_rating INT
 );
 
@@ -24,7 +19,6 @@ CREATE TABLE category(
 	category_id INT PRIMARY KEY,
 	name VARCHAR(20),
 	head_category_id INT,
-	head_category_name VARCHAR(20)
 );
 
 CREATE TABLE product_categories(
