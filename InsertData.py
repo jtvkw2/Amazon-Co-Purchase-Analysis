@@ -17,6 +17,8 @@ import re
 id_list = []
 
 def cleanStr4SQL(s):
+    if s is None:
+        s = 'NA'
     return s.replace("'", "`").replace("\n", " ")
 
 def int2BoolStr(value):
@@ -38,14 +40,17 @@ def insert2Product(conn):
     for key, value in dp.asin_dict.items():
         id = key
         asin = value
-
-        if dp.get_name(id) is None:
-            continue
         id_list.append(id)
-        title = dp.get_name(id)
-        group = dp.get_group(id)
-        rank = dp.get_rank(id)
-        rate = dp.get_rating(id)
+        if dp.get_name(id) is None:
+            title = None
+            group = None
+            rank = None
+            rate = None
+        else:
+            title = dp.get_name(id)
+            group = dp.get_group(id)
+            rank = dp.get_rank(id)
+            rate = dp.get_rating(id)
 
         sql_str = "INSERT INTO product (ID, ASIN, title, group_name, salesrank, avg_review_rating) " \
                   "VALUES (" + str(id) + ",'" + \
@@ -57,8 +62,8 @@ def insert2Product(conn):
         print(sql_str)
         try:
             cur.execute(sql_str)
-        except:
-            print('Failed to insert ', str(id), ' in product table')
+        except Exception as e:
+            print('Failed to insert ', str(id), ' in product table. Exception: ', e)
             file.write(sql_str)
         conn.commit()
     file.close()
@@ -76,8 +81,8 @@ def insert2Similar(conn):
             print(sql_str)
             try:
                 cur.execute(sql_str)
-            except:
-                print('Failed to insert ', str(id), ' in similar table')
+            except Exception as e:
+                print('Failed to insert ', str(id), ' in similar table. Expt: ', e)
             conn.commit()
 
 def insert2Category(conn):
