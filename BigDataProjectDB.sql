@@ -1,9 +1,9 @@
-DROP table similar_products;
-DROP table product_categories;
-DROP table product_reviews;
-DROP table review;
-DROP table category;
-DROP table product;
+DROP TABLE product_reviews;
+DROP TABLE review;
+DROP TABLE product_categories;
+DROP TABLE category;
+DROP TABLE similar_products;
+DROP TABLE product;
 
 CREATE TABLE product(
 	ID INT PRIMARY KEY,
@@ -11,10 +11,6 @@ CREATE TABLE product(
 	title VARCHAR(100),
 	group_name VARCHAR(5) not null,
 	salesrank INT,
-	num_similar INT,
-	num_categories INT,
-	num_reviews INT,
-	num_downloaded_reviews INT,
 	avg_review_rating INT
 );
 
@@ -31,8 +27,6 @@ CREATE TABLE category(
 	name VARCHAR(20),
 	head_category_id INT
 );
-ALTER TABLE category
-ADD FOREIGN KEY (head_category_id) REFERENCES category(category_id);
 
 CREATE TABLE product_categories(
 	product_id INT,
