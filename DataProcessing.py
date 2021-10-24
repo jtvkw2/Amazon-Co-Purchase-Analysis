@@ -47,8 +47,9 @@ def process_data(file):
                 review_num += 1
                 if num_ratings == 0:
                     review_num = 0
-                continue    
-            if num_cat > 0:
+                continue
+
+            elif num_cat > 0:
                 cat_split = line.split('|')
                 prev_cat = ''
                 if total_cat == num_cat:
@@ -64,7 +65,7 @@ def process_data(file):
                     cat_num = 0
                     total_cat == 0
                 continue
-            check_id = re.search(r'(Id):\s*(\d)', line) 
+            check_id = re.search(r'(Id):\s*(\d)', line)
             if check_id is not None:
                 id_matches = re.findall(r'(?<=Id:   )\d+', line)
                 curr_id = int(id_matches[0])
