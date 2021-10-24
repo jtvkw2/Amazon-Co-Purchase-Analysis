@@ -1,9 +1,4 @@
-#import networkx as nx
-# from apyori import apriori as ap
-#import numpy as np
-#import matplotlib.pyplot as plt
 import DataProcessing as dp
-# import TestResults as tr
 import InsertData as id
 import psycopg2
 import os
@@ -11,27 +6,15 @@ import os
 
 def main():
     print("Processing Data...")
-    file = "test.txt" # just make sure .txt is in sam efolder as .py
+    file = "amazon-meta.txt"  # just make sure .txt is in same folder as .py
     dp.process_data(file)
-
-    # print("ASIN of 454888 ->", dp.get_asin('454888'))
-    # print("Name of 454888 -> " + str(dp.get_name('454888')))
-    # print("Rating for: 454888 -> " + str(dp.get_rating('454888')))
-    # print("Group of 454888 -> " + str(dp.get_group('454888')))
-    # print("Ranking of 454888 -> " + str(dp.get_rank('454888')))
-    # print("Similar of 454888 -> " + str(dp.get_similar('454888')))
-    # print("Subcategories of 454888 are ->", dp.get_subcat('454888'))
-    # print("Reviews of 454888 -> ", dp.get_reviews('454888'))
 
     engine = None
     try:
+        # THIS WILL BE DIFFERENT FOR ALL OF US UNTIL THE AWS IS SET
         engine = psycopg2.connect(
-            database="postgres",
-            user = 'DBUsr',
-            password = 'password',
-            host = "abnormaldistributiondb.cejfw2khahqu.us-west-2.rds.amazonaws.com",
-            port = '5432'
-        )
+            database=, user="postgres", host="localhost", password=,
+            port="5432")
     except:
         print('Unable to connect to the database!')
 
@@ -39,7 +22,7 @@ def main():
         sqlFile = file.read()
         file.close()
         sqlCommands = sqlFile.split(';')
-        for command in sqlCommands:    # Had to remove the alter table command for category table
+        for command in sqlCommands:  
             if command != '\n':
                 command += ';'
                 print(command)  
@@ -56,13 +39,13 @@ def main():
     id.insert2Category(engine)
     id.insert2ProdCat(engine)
     id.insert2Review(engine)
-
     cur.close()
     engine.close()
 
     # print(set(dp.group_dict.values()))
-    #yori = [[key] + val for key, val in dp.get_full_sim().items()]
-    #print(list(ap(yori, min_support = 0.012, min_confidence=0.8)))
+    # yori = [[key] + val for key, val in dp.get_full_sim().items()]
+    # print(list(ap(yori, min_support = 0.012, min_confidence=0.8)))
+
 
 if __name__ == '__main__':
     main()
