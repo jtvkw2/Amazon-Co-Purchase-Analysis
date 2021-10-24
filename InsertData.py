@@ -40,7 +40,7 @@ def insert2Product(conn):
     # It isn't too bad. Only 74 items are added to the database. With only 1 dropped tuple.
     print('Inserting into product table!')
     cur = conn.cursor()
-    file = open('FailedProduct.txt', 'w')
+    # file = open('FailedProduct.txt', 'w')
     
     for key, value in dp.asin_dict.items():
         id = key
@@ -64,31 +64,36 @@ def insert2Product(conn):
                            cleanStr4SQL(group) + "'," + \
                            int2NAStr(rank) + "," + \
                            int2NAStr(rate) + ");"
-        print(sql_str)
+        # print(sql_str)
         try:
             cur.execute(sql_str)
         except Exception as e:
             print('Failed to insert ', str(id), ' in product table. Exception: ', e)
-            file.write(sql_str)
+            # file.write(sql_str)
         conn.commit()
-    file.close()
+    print("products have been inserted to product table")
+    # file.close()
 
 def insert2Similar(conn):
     print('Inserting into similar table!')
     cur = conn.cursor()
+   # file = open('FailedSim.txt', 'w')
     for id in id_list:
         sim_list = dp.get_similar(id)
-        if not sim_list:
-            continue
+        if dp.get_similar(id) is None:
+            sim_list = [None]
         for sim in sim_list:
             sql_str = "INSERT INTO similar_products (product_id, similar_ASIN) " \
                       "VALUES (" + str(id) + ",'" + cleanStr4SQL(sim) + "');"
-            print(sql_str)
+            # print(sql_str)
             try:
                 cur.execute(sql_str)
             except Exception as e:
-                print('Failed to insert ', str(id), ' in similar table. Expt: ', e)
-            conn.commit()
+                print('Failed to insert ', str(id), ' in similar table', e)
+                file.write(sql_str)
+        conn.commit()
+    print("similar products have been inserted to the similar_products table")
+    file.close()
 
 def insert2Category(conn):
     print('Inserting into category table!')
