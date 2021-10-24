@@ -104,7 +104,7 @@ def process_data(file):
                 ar_matches = re.findall(r'(?<=avg rating: )\d?\.?\d+', line)
                 curr_rate = float(ar_matches[0])
                 rate_dict[curr_id] = curr_rate
-            check_reviews = re.search(r'total: +(\S+)', line)
+            check_reviews = re.search(r'(total): +(\S+)', line)
             if check_reviews is not None:
                 r_matches = re.findall(r'(?<=total: )\d+', line)
                 num_ratings = int(r_matches[0])
