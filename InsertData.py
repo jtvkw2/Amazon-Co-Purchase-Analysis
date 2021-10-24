@@ -1,6 +1,6 @@
 '''
 This will insert the data into the PostgreSQL Database hosted on Amazon AWS.
-Will use the dictionaries created in "DataProcessing.py". 
+Will use the dictionaries created in "DataProcessing.py".
 Called by "main.py"
 Authors:    Abnormal Distribution Team
             Chris Mims
@@ -54,6 +54,8 @@ def insert2Product(conn):
             group = dp.get_group(id)
             rank = dp.get_rank(id)
             rate = dp.get_rating(id)
+
+
         sql_str = "INSERT INTO product (ID, ASIN, title, group_name, salesrank, avg_review_rating) " \
                   "VALUES (" + str(id) + ",'" + \
                   cleanStr4SQL(asin) + "','" + \
@@ -61,6 +63,7 @@ def insert2Product(conn):
                   cleanStr4SQL(group) + "'," + \
                   int2NAStr(rank) + "," + \
                   int2NAStr(rate) + ");"
+
         try:
             cur.execute(sql_str)
         except Exception as e:
@@ -96,6 +99,7 @@ def insert2Category(conn):
     print('Inserting into category table!')
     cur = conn.cursor()
     # file = open('FailedCat.txt', 'w')
+
     unique_id = []
 
     for item in dp.cat_dict.items():
@@ -160,6 +164,7 @@ def insert2ProdCat(conn):
         conn.commit()
       print("product categories have been inserted to product_category table")
     # file.close()
+
 
 def insert2Review(conn):
     print('Inserting into review and product reviews table!')

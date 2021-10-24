@@ -59,7 +59,7 @@ def process_data(file):
                     cat_num = 0
                     total_cat == 0
                 continue
-           
+                
             check_id = re.search(r'(Id):\s*(\d)', line)
             if check_id is not None:
                 id_matches = re.findall(r'(?<=Id:   )\d+', line)
@@ -69,19 +69,19 @@ def process_data(file):
             if (count in p_range and count != 0):
                 print('Processed ', count, ' products')
                 continue
-            
+                
             check_asin = re.search(r'(ASIN):\s*(\S+)',line)
             if check_asin is not None:
                 asin_match = re.findall(r'(?<=ASIN: ).*', line)
                 asin_dict[curr_id] = asin_match[0]
                 continue
-           
+                
             check_group = re.search(r'(group):\s*(\w+)', line)
             if check_group is not None:
                 curr_group = re.findall(r'(?<=group: ).*', line)[0]
                 group_dict[curr_id] = curr_group
                 continue
-            
+
             check_similar = re.search(r'(similar):\s*(\w+)',line)
             if check_similar is not None:
                 sim_num = int(re.findall(r'(?<=similar: )\d', line)[0])
@@ -91,20 +91,20 @@ def process_data(file):
                 sim_split = curr_similar.split()
                 sim_dict[curr_id] = [item for item in sim_split[1:]]
                 continue
-            
+
             check_cat = re.search(r'(categories): *(\d+)', line)
             if check_cat is not None:
                 c_matches = re.findall(r'(?<=categories: )\d+', line)
                 num_cat = int(c_matches[0])
                 total_cat = num_cat
                 continue
-            
+
             check_rate = re.search(r'(avg rating):\s*(\d+)', line)
             if check_rate is not None:
                 ar_matches = re.findall(r'(?<=avg rating: )\d?\.?\d+', line)
                 curr_rate = float(ar_matches[0])
                 rate_dict[curr_id] = curr_rate
-            
+
             check_reviews = re.search(r'(total): +(\S+)', line)
             if check_reviews is not None:
                 r_matches = re.findall(r'(?<=total: )\d+', line)
@@ -115,7 +115,7 @@ def process_data(file):
                 curr_name = re.findall(r'(?<=title: ).*', line)[0]
                 title_dict[curr_id] = curr_name
                 continue
-            
+
             check_rank = re.search(r'(salesrank):\s*(\d+)',line)
             if check_rank is not None:
                 sr_matches = re.findall(r'(?<=salesrank: )\d+', line)
