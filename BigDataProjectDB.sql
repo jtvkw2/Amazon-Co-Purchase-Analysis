@@ -1,3 +1,10 @@
+DROP TABLE product_reviews;
+DROP TABLE review;
+DROP TABLE product_categories;
+DROP TABLE category;
+DROP TABLE similar_products;
+DROP TABLE product;
+
 CREATE TABLE product(
 	ID INT PRIMARY KEY,
 	ASIN CHAR(10) not null UNIQUE,
@@ -18,7 +25,7 @@ CREATE TABLE similar_products(
 CREATE TABLE category(
 	category_id INT PRIMARY KEY,
 	name VARCHAR(20),
-	head_category_id INT,
+	head_category_id INT
 );
 
 CREATE TABLE product_categories(

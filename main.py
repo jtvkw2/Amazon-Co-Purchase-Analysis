@@ -5,6 +5,8 @@
 import DataProcessing as dp
 # import TestResults as tr
 import InsertData as id
+import psycopg2
+import os
 
 
 def main():
@@ -21,11 +23,41 @@ def main():
     # print("Subcategories of 454888 are ->", dp.get_subcat('454888'))
     # print("Reviews of 454888 -> ", dp.get_reviews('454888'))
 
-    id.insert2Product()
-    # id.insert2Similar()
-    # id.insert2Category()
-    # id.insert2ProdCat()
-    id.insert2Review()
+    engine = None
+    try:
+        engine = psycopg2.connect(
+            database="postgres",
+            user = 'DBUsr',
+            password = 'password',
+            host = "abnormaldistributiondb.cejfw2khahqu.us-west-2.rds.amazonaws.com",
+            port = '5432'
+        )
+    except:
+        print('Unable to connect to the database!')
+    cur = engine.cursor()
+
+    with open("/Users/chris24/Documents/WSU/Fall 2021/CPTS 415 /Project/Amazon-Co-Purchase-Analysis/BigDataProjectDB.sql", 'r') as file:
+        sqlFile = file.read()
+        file.close()
+
+        sqlCommands = sqlFile.split(';')
+
+        for command in sqlCommands:    # Had to remove the alter table command for category table
+            print(command)             # We will need to load in the data and then assert the
+            try:                       # constraint and figure out what to do with deletion
+                cur.execute(command)   # problems!
+            except:
+                print('Could not create tables!')
+            engine.commit()
+
+    id.insert2Product(engine)
+    id.insert2Similar(engine)
+    id.insert2Category(engine)
+    id.insert2ProdCat(engine)
+    id.insert2Review(engine)
+
+    cur.close()
+    engine.close()
 
     # print(set(dp.group_dict.values()))
     #yori = [[key] + val for key, val in dp.get_full_sim().items()]
