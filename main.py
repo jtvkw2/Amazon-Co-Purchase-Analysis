@@ -11,7 +11,7 @@ import os
 
 def main():
     print("Processing Data...")
-    file = "/test.txt" # just make sure .txt is in sam efolder as .py
+    file = "test.txt" # just make sure .txt is in sam efolder as .py
     dp.process_data(file)
 
     # print("ASIN of 454888 ->", dp.get_asin('454888'))
@@ -34,21 +34,22 @@ def main():
         )
     except:
         print('Unable to connect to the database!')
-    cur = engine.cursor()
 
-    with open("/Users/chris24/Documents/WSU/Fall 2021/CPTS 415 /Project/Amazon-Co-Purchase-Analysis/BigDataProjectDB.sql", 'r') as file:
+    with open("BigDataProjectDB.sql", 'r') as file:
         sqlFile = file.read()
         file.close()
-
         sqlCommands = sqlFile.split(';')
-
         for command in sqlCommands:    # Had to remove the alter table command for category table
-            print(command)             # We will need to load in the data and then assert the
-            try:                       # constraint and figure out what to do with deletion
-                cur.execute(command)   # problems!
-            except:
-                print('Could not create tables!')
-            engine.commit()
+            if command != '\n':
+                command += ';'
+                print(command)  
+                try:  
+                    cur = engine.cursor()
+                    cur.execute(command)
+                    cur.close()
+                except Exception as e:
+                    print('Could not create tables!', e)
+                engine.commit()
 
     id.insert2Product(engine)
     id.insert2Similar(engine)
