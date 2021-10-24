@@ -135,26 +135,28 @@ def insert2Category(conn):
 def insert2ProdCat(conn):
     print('Inserting into product category table!')
     cur = conn.cursor()
+    file = open('FailedProdCat', 'w')
     for id in id_list:
-        sub_cat_obj = dp.get_subcat(id)
-        if not sub_cat_obj:
+        if dp.get_subcat(id) is None:
             continue
-        sub_cat_list = sub_cat_obj.values()
-        for item in sub_cat_list:
+        else:
+            category = dp.get_subcat(id)
+        cat_list = category.values()
+        for item in cat_list:
             sub_cat_num_match = re.findall(r'\[(.*)\]', item)
             if sub_cat_num_match:
                 sub_cat_num = sub_cat_num_match[0]
             else:
-                continue
+                sub_cat_num = None
             sql_str = "INSERT INTO product_categories (product_id, category_id) " \
-                      "VALUES (" + str(id) + "," + str(sub_cat_num) + ");"
+                      "VALUES (" + str(id) + "," + int2NAStr(sub_cat_num) + ");"
             try:
                 cur.execute(sql_str)
-            except:
+            except Exception as e:
                 print('Failed to insert ', str(id), "'s category ", str(sub_cat_num), \
-                      'to the product_categories table!')
-            conn.commit()
-            
+                      'to the product_categories table!', '\n', e)
+                file.write(sql_str)
+        conn.commit()
 
 def insert2Review(conn):
     print('Inserting into review table!')
