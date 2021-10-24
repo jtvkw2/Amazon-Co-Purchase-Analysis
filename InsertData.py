@@ -159,12 +159,13 @@ def insert2ProdCat(conn):
         conn.commit()
 
 def insert2Review(conn):
-    print('Inserting into review table!')
+    print('Inserting into review and product reviews table!')
     cur = conn.cursor()
     for id in id_list:
-        review_obj = dp.get_reviews(id)
-        if not review_obj:
+        if dp.get_reviews(id) is None:
             continue
+        else:
+            review_obj = dp.get_reviews(id)
         review_list = review_obj.values()
         for review in review_list:
             date = review.get('date')
@@ -182,14 +183,14 @@ def insert2Review(conn):
                                       str(votes),
                                       str(helpful)))
                 r_id = str(cur.fetchone()[0])
-            except:
-                print('Failed to insert review for ', str(id), ' in review table!')
+            except Exception as e:
+                print('Failed to insert review for ', str(id), ' in review table!', e)
             conn.commit()
 
             new_sql = "INSERT INTO product_reviews (product_id, review_id) " \
                       "VALUES (%s,%s);"
             try:
                 cur.execute(new_sql, (str(id), r_id))
-            except:
-                print('Failed to insert review ', r_id, ' for product ', str(id), ' in product_reviews table!')
+            except Exception as e:
+                print('Failed to insert review ', r_id, ' for product ', str(id), ' in product_reviews table!', e)
             conn.commit()
