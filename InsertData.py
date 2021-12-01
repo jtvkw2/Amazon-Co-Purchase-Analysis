@@ -162,7 +162,7 @@ def insert2ProdCat(conn):
                       'to the product_categories table!', '\n', e)
                 # file.write(sql_str)
         conn.commit()
-      print("product categories have been inserted to product_category table")
+        print("product categories have been inserted to product_category table")
     # file.close()
 
 

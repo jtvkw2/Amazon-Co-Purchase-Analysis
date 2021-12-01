@@ -1,20 +1,22 @@
 import DataProcessing as dp
 import InsertData as id
-import psycopg2
+from databricks import sql
 import os
 
 
 def main():
     print("Processing Data...")
     file = "amazon-meta.txt"  # just make sure .txt is in same folder as .py
-    dp.process_data(file)
+    #dp.process_data(file)
 
     engine = None
     try:
         # THIS WILL BE DIFFERENT FOR ALL OF US UNTIL THE AWS IS SET
-        engine = psycopg2.connect(
-            database=, user="postgres", host="localhost", password=,
-            port="5432")
+        engine = sql.connect(
+            server_hostname = 'community.cloud.databricks.com',
+            http_path = 'sql/protocolv1/o/4379593692351400/1103-180339-ltufin51',
+            access_token = '<personal-access-token>'
+        )
     except:
         print('Unable to connect to the database!')
 
@@ -22,11 +24,11 @@ def main():
         sqlFile = file.read()
         file.close()
         sqlCommands = sqlFile.split(';')
-        for command in sqlCommands:  
+        for command in sqlCommands:
             if command != '\n':
                 command += ';'
-                print(command)  
-                try:  
+                print(command)
+                try:
                     cur = engine.cursor()
                     cur.execute(command)
                     cur.close()

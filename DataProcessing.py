@@ -1,4 +1,5 @@
 import re
+import csv
 
 asin_dict = {}
 title_dict = {}
@@ -9,6 +10,7 @@ rate_dict = {}
 sim_dict = {}
 review_dict = {}
 cat_dict = {}
+title_wordlist = []
 
 def process_data(file):
     with open(file) as f:
@@ -59,7 +61,7 @@ def process_data(file):
                     cat_num = 0
                     total_cat == 0
                 continue
-                
+
             check_id = re.search(r'(Id):\s*(\d)', line)
             if check_id is not None:
                 id_matches = re.findall(r'(?<=Id:   )\d+', line)
@@ -69,13 +71,13 @@ def process_data(file):
             if (count in p_range and count != 0):
                 print('Processed ', count, ' products')
                 continue
-                
+
             check_asin = re.search(r'(ASIN):\s*(\S+)',line)
             if check_asin is not None:
                 asin_match = re.findall(r'(?<=ASIN: ).*', line)
                 asin_dict[curr_id] = asin_match[0]
                 continue
-                
+
             check_group = re.search(r'(group):\s*(\w+)', line)
             if check_group is not None:
                 curr_group = re.findall(r'(?<=group: ).*', line)[0]
@@ -114,6 +116,7 @@ def process_data(file):
             if check_name is not None:
                 curr_name = re.findall(r'(?<=title: ).*', line)[0]
                 title_dict[curr_id] = curr_name
+                title_wordlist.append(curr_name)
                 continue
 
             check_rank = re.search(r'(salesrank):\s*(\d+)',line)
@@ -150,3 +153,13 @@ def get_subcat(id):
 
 def get_reviews(id):
     return review_dict.get(int(id))
+
+def get_wordlist():
+    return list(title_dict.values())
+
+def get_id(val):
+    for key, value in title_dict.items():
+         if val == value:
+             return key
+
+    return "key doesn't exist"
