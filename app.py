@@ -4,8 +4,106 @@ from neo4j import GraphDatabase
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QFont
+from PyQt5 import uic
 
 
+qtCreatorFile = "app.ui"
+Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
+
+class AmazonApp(QMainWindow):
+    def __init__(self):
+        super(AmazonApp, self).__init__()
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+
+        self.driver = GraphDatabase.driver('neo4j://40.77.108.181:7687', auth=('neo4j', 'amazondb'))
+        self.wordList = prd.get_wordlist()
+        self.current_search = []
+
+        completer = QCompleter(self.wordList, self)
+        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.ui.inputLine.setCompleter(completer)
+        self.ui.errorLabel.setVisible(False)
+        self.ui.addButton.clicked.connect(self.addButtonPressed)
+        self.ui.recButton.clicked.connect(self.recButtonPressed)
+        self.ui.algList.itemSelectionChanged.connect(self.algoSelected)
+        self.ui.itemClearButton.clicked.connect(self.itemClearPressed)
+        self.ui.clearAllButton.clicked.connect(self.clearAllPressed)
+
+
+    def close(self):
+        # Don't forget to close the driver connection when you are finished with it
+        self.driver.close()
+
+    def addButtonPressed(self):
+        entryItem = self.ui.inputLine.text()
+        self.ui.errorLabel.setVisible(False)
+        if entryItem in self.wordList:
+            id = prd.get_id(entryItem)
+            self.current_search.append(id)
+            self.ui.inputLine.clear()
+            self.ui.inputList.append(entryItem)
+
+    def recButtonPressed(self):
+        if len(self.current_search) == 0:
+            self.ui.errorLabel.setText('Please Select Items')
+            self.ui.errorLabel.setVisible(True)
+            return
+        if len(self.ui.algList.selectedItems()) <= 0:
+            self.ui.errorLabel.setText('Select Algorithm')
+            self.ui.errorLabel.setVisible(True)
+            return
+        query = self.getQuery()
+        with self.driver.session() as recDB:
+            nodes = recDB.write_transaction(self._search, query)
+        for node in nodes:
+            self.ui.itemRecList.append(node["o.title"])
+
+    '''
+    THIS IS WHERE QUERIES FOR DIFFERENT ALGORITHMS GO!!!! 
+    '''
+
+    def getQuery(self):
+        algorithm = self.ui.algList.selectedItems()[0].text()
+        if algorithm == 'algorithm1':
+            query = "MATCH (:Products {id: "+self.current_search[0]+"})-[:Similar]-(o) RETURN DISTINCT o.title LIMIT 25"
+            return query
+        elif algorithm == 'algorithm2':
+            query = ""
+            return query
+        elif algorithm == 'algorithm3':
+            query = ""
+            return query
+
+    def _search(self, tx, query):
+        return [record for record in tx.run(query)]
+
+    def algoSelected(self):
+        self.ui.errorLabel.setVisible(False)
+
+    def itemClearPressed(self):
+        self.ui.inputLine.clear()
+        self.ui.inputList.clear()
+        current_search = []
+
+    def clearAllPressed(self):
+        self.ui.inputLine.clear()
+        self.ui.inputList.clear()
+        self.ui.itemRecList.clear()
+        current_search = []
+
+
+if __name__ == '__main__':
+
+    app = QApplication(sys.argv)
+    window = AmazonApp()
+    window.show()
+    sys.exit(app.exec_())
+    window.close()
+
+
+
+'''
 class AppDemo(QWidget):
     def __init__(self):
         super().__init__()
@@ -156,3 +254,4 @@ demo = AppDemo()
 demo.show()
 sys.exit(app.exec_())
 demo.close()
+'''
