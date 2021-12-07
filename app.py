@@ -19,13 +19,19 @@ class AmazonApp(QMainWindow):
         self.driver = GraphDatabase.driver('neo4j://40.77.108.181:7687', auth=('neo4j', 'amazondb'))
         self.wordList = prd.get_wordlist()
         self.current_search = []
+        self.groupFilt = None
+        self.itemRatingFilt = None
+        self.itemReviewsFilt = None
+        self.userRatingFilt = None
+        self.userReviewsFilt = None
 
         completer = QCompleter(self.wordList, self)
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.ui.inputLine.setCompleter(completer)
         self.ui.errorLabel.setVisible(False)
         self.ui.addButton.clicked.connect(self.addButtonPressed)
-        self.ui.recButton.clicked.connect(self.recButtonPressed)
+        self.ui.itemRecButton.clicked.connect(self.itemRecButtonPressed)
+        self.ui.userRecButton.clicked.connect(self.userRecButtonPressed)
         self.ui.algList.itemSelectionChanged.connect(self.algoSelected)
         self.ui.itemClearButton.clicked.connect(self.itemClearPressed)
         self.ui.clearAllButton.clicked.connect(self.clearAllPressed)
@@ -44,7 +50,14 @@ class AmazonApp(QMainWindow):
             self.ui.inputLine.clear()
             self.ui.inputList.append(entryItem)
 
-    def recButtonPressed(self):
+   def itemRecButtonPressed(self):
+        #check: ' if filter == "select filter": then filter = None '
+        # (because of how the filter list properties are set up on the UI
+        self.groupFilt = self.ui.groupList.currentText()
+        self.itemRatingFilt = self.ui.minItemAvgRating.currentText()
+        self.itemReviewsFilt = self.ui.itemMinReviews.text()
+        itemsSortBy = self.ui.itemsSortBy #idk if you want this as a class property
+        
         if len(self.current_search) == 0:
             self.ui.errorLabel.setText('Please Select Items')
             self.ui.errorLabel.setVisible(True)
@@ -58,7 +71,26 @@ class AmazonApp(QMainWindow):
             nodes = recDB.write_transaction(self._search, query)
         for node in nodes:
             self.ui.itemRecList.append(node["o.title"])
+            
+            
+    def userRecButtonPressed(self):
+        #check: ' if filter == "select filter": then filter = None '
+        # (because of how the filter list properties are set up on the UI
+        self.userRatingFilt = self.ui.minUserAvgRating.currentText()
+        self.userReviewsFilt = self.ui.userMinReviews.text()
+        userSortBy = self.ui.userSortBy #idk if you want this as a class property
 
+        if len(self.current_search) == 0:
+            self.ui.errorLabel.setText('Please Select Items')
+            self.ui.errorLabel.setVisible(True)
+            return
+        if len(self.ui.algList.selectedItems()) <= 0:
+            self.ui.errorLabel.setText('Select Algorithm')
+            self.ui.errorLabel.setVisible(True)
+            return
+        #FIXME: This is where output (users) should be appended to 'outputList' (in the UI) (See Above)
+              
+            
     '''
     THIS IS WHERE QUERIES FOR DIFFERENT ALGORITHMS GO!!!! 
     '''
