@@ -1,6 +1,13 @@
 import sys
+import time
+import pandas as pd
+import numpy as np
 import ProccesedData as prd
+import queryGen as qg
 from neo4j import GraphDatabase
+from functools import partial
+from scipy.spatial import distance
+from scipy.stats import pearsonr
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QFont
@@ -18,24 +25,24 @@ class AmazonApp(QMainWindow):
 
         self.driver = GraphDatabase.driver('neo4j://40.77.108.181:7687', auth=('neo4j', 'amazondb'))
         self.wordList = prd.get_wordlist()
-        self.current_search = []
+        self.current_search = ['1', '48724']
         self.groupFilt = None
         self.itemRatingFilt = None
         self.itemReviewsFilt = None
         self.userRatingFilt = None
         self.userReviewsFilt = None
+        self.itemsSortBy = None
 
         completer = QCompleter(self.wordList, self)
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.ui.inputLine.setCompleter(completer)
         self.ui.errorLabel.setVisible(False)
         self.ui.addButton.clicked.connect(self.addButtonPressed)
-        self.ui.itemRecButton.clicked.connect(self.itemRecButtonPressed)
-        self.ui.userRecButton.clicked.connect(self.userRecButtonPressed)
+        self.ui.itemRecButton.clicked.connect(partial(self.RecButtonPressed,'item'))
+        self.ui.userRecButton.clicked.connect(partial(self.RecButtonPressed,'user'))
         self.ui.algList.itemSelectionChanged.connect(self.algoSelected)
         self.ui.itemClearButton.clicked.connect(self.itemClearPressed)
         self.ui.clearAllButton.clicked.connect(self.clearAllPressed)
-
 
     def close(self):
         # Don't forget to close the driver connection when you are finished with it
@@ -50,62 +57,113 @@ class AmazonApp(QMainWindow):
             self.ui.inputLine.clear()
             self.ui.inputList.append(entryItem)
 
-   def itemRecButtonPressed(self):
+    def RecButtonPressed(self, type):
         #check: ' if filter == "select filter": then filter = None '
         # (because of how the filter list properties are set up on the UI
-        self.groupFilt = self.ui.groupList.currentText()
-        self.itemRatingFilt = self.ui.minItemAvgRating.currentText()
-        self.itemReviewsFilt = self.ui.itemMinReviews.text()
-        itemsSortBy = self.ui.itemsSortBy #idk if you want this as a class property
-        
+        if type == 'item':
+            self.groupFilt = self.ui.groupList.currentText()
+            self.itemRatingFilt = self.ui.minItemAvgRating.currentText()
+            self.itemReviewsFilt = self.ui.itemMinReviews.text()
+            self.itemsSortBy = self.ui.itemsSortBy #idk if you want this as a class property
+        elif type == 'user':
+            #check: ' if filter == "select filter": then filter = None '
+            # (because of how the filter list properties are set up on the UI
+            self.userRatingFilt = self.ui.minUserAvgRating.currentText()
+            self.userReviewsFilt = self.ui.userMinReviews.text()
+            self.userSortBy = self.ui.userSortBy #idk if you want this as a class property
         if len(self.current_search) == 0:
             self.ui.errorLabel.setText('Please Select Items')
+            self.ui.errorLabel.setVisible(True)
+            return
+        if len(self.current_search) == 1:
+            self.ui.errorLabel.setText('Please Select More Than 1 Item')
             self.ui.errorLabel.setVisible(True)
             return
         if len(self.ui.algList.selectedItems()) <= 0:
             self.ui.errorLabel.setText('Select Algorithm')
             self.ui.errorLabel.setVisible(True)
             return
-        query = self.getQuery()
-        with self.driver.session() as recDB:
-            nodes = recDB.write_transaction(self._search, query)
-        for node in nodes:
-            self.ui.itemRecList.append(node["o.title"])
-            
-            
-    def userRecButtonPressed(self):
-        #check: ' if filter == "select filter": then filter = None '
-        # (because of how the filter list properties are set up on the UI
-        self.userRatingFilt = self.ui.minUserAvgRating.currentText()
-        self.userReviewsFilt = self.ui.userMinReviews.text()
-        userSortBy = self.ui.userSortBy #idk if you want this as a class property
 
-        if len(self.current_search) == 0:
-            self.ui.errorLabel.setText('Please Select Items')
-            self.ui.errorLabel.setVisible(True)
-            return
-        if len(self.ui.algList.selectedItems()) <= 0:
-            self.ui.errorLabel.setText('Select Algorithm')
-            self.ui.errorLabel.setVisible(True)
-            return
-        #FIXME: This is where output (users) should be appended to 'outputList' (in the UI) (See Above)
-              
-            
-    '''
-    THIS IS WHERE QUERIES FOR DIFFERENT ALGORITHMS GO!!!! 
-    '''
-
-    def getQuery(self):
         algorithm = self.ui.algList.selectedItems()[0].text()
-        if algorithm == 'algorithm1':
-            query = "MATCH (:Products {id: "+self.current_search[0]+"})-[:Similar]-(o) RETURN DISTINCT o.title LIMIT 25"
-            return query
-        elif algorithm == 'algorithm2':
-            query = ""
-            return query
-        elif algorithm == 'algorithm3':
-            query = ""
-            return query
+        with self.driver.session() as recDB:
+            if len(self.current_search) > 1:
+                #print(self.current_search)
+                start_time = time.time()
+                all_nodes = recDB.write_transaction(self._search, qg.dfs_query(int(self.current_search[0])))
+                all_nodes_id = self.recordToList(all_nodes, 'ids', type)
+                for i in range(1, len(self.current_search)):
+                    curr_nodes = set(all_nodes_id)
+                    temp_nodes = recDB.write_transaction(self._search, qg.dfs_query(int(self.current_search[i])))
+                    if temp_nodes:
+                        temp_list = self.recordToList(temp_nodes, 'ids', type)
+                        inter = curr_nodes.intersection(temp_list)
+                        all_nodes_id = list(inter)
+
+                final_data = []
+                for id in all_nodes_id:
+                    curr_nodes = recDB.write_transaction(self._search, qg.dfs_query(int(id)))
+                    if curr_nodes:
+                        curr_list = self.recordToList(curr_nodes, 'ids', type)
+                        curr_sim = self.find_sim(all_nodes_id, curr_list, algorithm)
+                        if type == 'item':
+                            item_info = recDB.write_transaction(self._search, qg.info_query(int(id), type))
+                            if item_info:
+                                title = item_info[0]['prop']['title']
+                                group = item_info[0]['prop']['group_name']
+                                avg_review_rating = item_info[0]['prop']['avg_review_rating']
+                                salesrank = item_info[0]['prop']['salesrank']
+                                curr_data = [id, title, group, avg_review_rating, salesrank, curr_sim]
+                                final_data.append(curr_data)
+                        elif type == 'user':
+                            cust_nodes = recDB.write_transaction(self._search, qg.find_connected(int(id)))
+                            cust_list = self.recordToList(cust_nodes, 'connected.customer_id', type)
+                            for cust in cust_list:
+                                user_info = recDB.write_transaction(self._search, qg.info_query(id, 'user'))
+                                if user_info:
+                                    print(user_info)
+                                    rating = user_info[0]['prop']['rating']
+                                    reviews = user_info[0]['prop']['votes']
+                                    curr_data = [cust, rating, reviews, curr_sim]
+                                    final_data.append(curr_data)
+                if type == 'item':
+                    final_df = pd.DataFrame(final_data, columns = ['id', 'title', 'type', 'rating', 'salesrank', 'similarity'])
+                    self.outputToUI(final_df, type)
+                if type == 'user':
+                    final_df = pd.DataFrame(final_data, columns = ['id', 'rating', 'reviews', 'similarity'])
+                    self.outputToUI(final_df, type)
+                print("--- %s seconds ---" % (time.time() - start_time))
+
+
+    def recordToList(self, data, input, type):
+        output = []
+        for i in range(len(data)-1):
+            if type == 'item':
+                output.append(int(data[i][input]))
+            else:
+                output.append(data[i][input])
+        return output
+
+    def find_sim(self, list1, list2, algorithm):
+        if len(list1) >=100:
+            list1 = list1[:100]
+        if len(list2) >= 100:
+            list2 = list2[:100]
+        if len(list1) > len(list2):
+            list2.extend(['0'] * (len(list1)-len(list2)))
+        if len(list2) > len(list1):
+            list1.extend(['0'] * (len(list2)-len(list1)))
+
+        list1 = np.asarray(list1, dtype='float64')
+        list2 = np.asarray(list2, dtype='float64')
+
+        if algorithm == 'algorithm1': #Cosin Sim
+            return 1 - distance.cosine(list1, list2)
+        elif algorithm == 'algorithm2': # Pearson
+            return pearsonr(list1, list2)
+        elif algorithm == 'algorithm3': # Jaccard
+            return sdistance.jaccard(list1, list2)
+        else:
+            return 0
 
     def _search(self, tx, query):
         return [record for record in tx.run(query)]
@@ -124,166 +182,57 @@ class AmazonApp(QMainWindow):
         self.ui.itemRecList.clear()
         current_search = []
 
+    def outputToUI(self, df, type):
+        output_df = df[df.similarity != 1.0]
+        if type == 'item':
+            if self.groupFilt is not None and self.groupFilt !='Select group':
+                output_df = output_df[self.groupFilt]
+            if self.itemRatingFilt is not None and self.itemRatingFilt != 'Select minimum rating':
+                output_df = output_df[output_df['rating'] >= self.itemRatingFilt]
+            output_df = self.sort_df(output_df, type)
+            for index, row in output_df.iterrows():
+                out_str = str(row['title']) + " \n    Similarity: " + str(row['similarity'])
+                self.ui.outputList.append(out_str)
+        elif type == 'user':
+            output_df = self.sort_df(output_df, type)
+            if self.userRatingFilt is not None and self.userRatingFilt != 'Select minimum rating':
+                output_df = output_df[output_df['rating'] >= self.userRatingFilt]
+            if self.userReviewsFilt is not None:
+                output_df = output_df[output_df['reviews'] >= self.userReviewsFilt]
+            for index, row in output_df.iterrows():
+                out_str = str(row['id']) + " \n    Similarity: " + str(row['similarity'])
+                self.ui.outputList.append(out_str)
+
+    def sort_df(self, df, type):
+        if type == 'item':
+            if self.itemsSortBy == 'Alphabetically A-Z':
+                return df.sort_values(by = ['title'])
+            elif self.itemsSortBy == 'Alphabetically Z-A':
+                return df.sort_values(by=['title'], ascending = False)
+            elif self.itemsSortBy == 'Average Rating':
+                return df.sort_values(by = ['rating'])
+            elif self.itemsSortBy == 'Salesrank':
+                return df.sort_values(by = ['salesrank'])
+            else:
+                return df.sort_values(by = ['similarity'])
+        elif type == 'user':
+            if self.userSortBy == 'Alphabetically A-Z':
+                return df.sort_values(by = ['id'])
+            elif self.userSortBy == 'Alphabetically Z-A':
+                return df.sort_values(by=['id'], ascending = False)
+            elif self.userSortBy == 'Average Rating':
+                return df.sort_values(by = ['rating'])
+            elif self.userSortBy == 'Number of Reviews':
+                return df.sort_values(by = ['rating'])
+            else:
+                return df.sort_values(by = ['similarity'], ascending = False)
+        else:
+            return df
+
 
 if __name__ == '__main__':
-
     app = QApplication(sys.argv)
     window = AmazonApp()
     window.show()
     sys.exit(app.exec_())
     window.close()
-
-
-
-'''
-class AppDemo(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.resize(1200, 800)
-        self.setWindowTitle('Recomendation Engine')
-        # This is Azure Neo4j Database - Not fully complete but working
-        self.driver = GraphDatabase.driver('neo4j://40.77.108.181:7687', auth=('neo4j', 'amazondb'))
-
-        #Init Values
-        self.wordList = prd.get_wordlist()
-        self.current_search = []
-
-        # Query properties
-        self.search_type = None
-        self.type = None
-        self.low_score = 0
-        self.high_score = 5
-        self.category = None
-        self.num_of_reviews_min = 0
-
-        #UI
-        self.initUI()
-
-        # input field
-    def initUI(self):
-        fnt = QFont('Open Sans', 12)
-        mainLayout = QVBoxLayout()
-
-        # Main input Bar
-        self.input = QLineEdit()
-        self.input.setFixedHeight(50)
-        self.input.setFont(fnt)
-        self.input.editingFinished.connect(self.addEntry)
-        mainLayout.addWidget(self.input)
-
-        # AutoCompletion based on titles in database
-        completer = QCompleter(self.wordList, self)
-        completer.setCaseSensitivity(Qt.CaseInsensitive)
-        self.input.setCompleter(completer)
-
-        #Console Input
-        self.input_console = QTextEdit()
-        self.input_console.setFont(fnt)
-        mainLayout.addWidget(self.input_console)
-
-        # Search Output
-        self.output_console = QTextEdit()
-        self.output_console.setFont(fnt)
-        mainLayout.addWidget(self.output_console)
-
-        #Submit Button to execute query
-        sub_button = QPushButton('Submit', self)
-        sub_button.setToolTip('Click to Find Similar')
-        sub_button.clicked.connect(self.search)
-        mainLayout.addWidget(sub_button)
-
-        #Clears all stored values and console
-        clear_button = QPushButton('Clear', self)
-        clear_button.setToolTip('Click to Clear All')
-        clear_button.clicked.connect(self.clear)
-        mainLayout.addWidget(clear_button)
-
-        self.setLayout(mainLayout)
-
-    #Adds entries for later query
-    def addEntry(self):
-        entryItem = self.input.text() #Checks incoming text
-
-        #Verifys that title is in Database otherwise it does not submit
-        if entryItem in self.wordList:
-            id = prd.get_id(entryItem)
-            self.current_search.append(id)
-            self.input.clear()
-            self.input_console.append(entryItem + "\n    ID: " + str(id) + "\n")
-
-    #Clears all Feilds onclick
-    def clear(self):
-        self.input.clear()
-        self.input_console.clear()
-        self.output_console.clear()
-        self.current_search = []
-        self.properties = []
-
-    def close(self):
-        # Don't forget to close the driver connection when you are finished with it
-        self.driver.close()
-
-
-    def _search(self, tx, query):
-        return [record for record in tx.run(query)]
-
-    #Search to execute query - done onclick
-    def search(self):
-        if len(self.current_search) == 0:
-            return
-        print(self.current_search[0])
-        self.output_console.clear()
-        # Maybe: query should include 'apoc.cypher.mapParallel' for parallel processing
-        # Use https://guides.neo4j.com/sandbox/recommendations/index.html for list of queries
-        query = "MATCH (:Products {id: "+self.current_search[0]+"})-[:Similar]-(o)"\
-                "RETURN DISTINCT o.title LIMIT 25"
-
-        query2 = f"""
-            WITH {self.current_search} as titles
-            MATCH (p1:Products)-[:Similar]->(p2:Products)
-            WHERE p1.title in titles
-            WITH p1, collect(p2) as p2p
-            WITH collect(p2p) as allTitles
-            WITH reduce(commonTitles = head(allTitles), prod in tail(allTitles) |
-                apoc.coll.intersection(commonTitles, prod)) as commonTitles
-            RETURN commonTitles
-        """
-
-        # Query outline to match users based on Cosign similarity
-        # Users have not been input into database yet
-            #MATCH (p1:User {name: 'Cynthia Freeman'})-[x:RATED]->(movie)<-[x2:RATED]-(p2:User)
-            #WHERE p2 <> p1
-            #WITH p1, p2, collect(x.rating) AS p1Ratings, collect(x2.rating) AS p2Ratings
-            #WHERE size(p1Ratings) > 10
-            #RETURN p1.name AS from,
-            #       p2.name AS to,
-            #       gds.alpha.similarity.cosine(p1Ratings, p2Ratings) AS similarity
-            #ORDER BY similarity DESC
-
-        # Query outline to match users based on Pearson similarity
-            # MATCH (p1:User {name: 'Cynthia Freeman'})-[x:RATED]->(movie:Movie)
-            # WITH p1, gds.alpha.similarity.asVector(movie, x.rating) AS p1Vector
-            # MATCH (p2:User)-[x2:RATED]->(movie:Movie) WHERE p2 <> p1
-            # WITH p1, p2, p1Vector, gds.alpha.similarity.asVector(movie, x2.rating) AS p2Vector
-            # WHERE size(apoc.coll.intersection([v in p1Vector | v.category], [v in p2Vector | v.category])) > 10
-            # RETURN p1.name AS from,
-                # p2.name AS to,
-                # gds.alpha.similarity.pearson(p1Vector, p2Vector, {vectorType: "maps"}) AS similarity
-            # ORDER BY similarity DESC
-            # LIMIT 100
-
-
-        with self.driver.session() as recDB:
-            nodes = recDB.write_transaction(self._search, query)
-        for node in nodes:
-            #print(node)
-            self.output_console.append(node["o.title"])
-
-
-#Runs App on Startup
-app = QApplication(sys.argv)
-demo = AppDemo()
-demo.show()
-sys.exit(app.exec_())
-demo.close()
-'''
