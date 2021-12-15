@@ -25,7 +25,7 @@ class AmazonApp(QMainWindow):
 
         self.driver = GraphDatabase.driver('neo4j://40.77.108.181:7687', auth=('neo4j', 'amazondb'))
         self.wordList = prd.get_wordlist()
-        self.current_search = ['1', '48724']
+        self.current_search = [] # Use this for testing - ['1', '48724']
         self.groupFilt = None
         self.itemRatingFilt = None
         self.itemReviewsFilt = None
@@ -95,9 +95,8 @@ class AmazonApp(QMainWindow):
                     temp_nodes = recDB.write_transaction(self._search, qg.dfs_query(int(self.current_search[i])))
                     if temp_nodes:
                         temp_list = self.recordToList(temp_nodes, 'ids', type)
-                        for n in temp_list:
-                            curr_nodes.add(n)
-                        all_nodes_id = list(curr_nodes)
+                        inter = curr_nodes.intersection(temp_list)
+                        all_nodes_id = list(inter)
 
                 final_data = []
                 for id in all_nodes_id:
