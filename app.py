@@ -159,7 +159,7 @@ class AmazonApp(QMainWindow):
         if algorithm == 'algorithm1': #Cosin Sim
             return 1 - distance.cosine(list1, list2)
         elif algorithm == 'algorithm2': # Pearson
-            return pearsonr(list1, list2)
+            return pearsonr(list1, list2)[0]
         elif algorithm == 'algorithm3': # Jaccard
             return sdistance.jaccard(list1, list2)
         else:

@@ -35,3 +35,11 @@ def info_query(id, type):
 
 def find_connected(id):
     return "Match (p:Products {id: '"+str(id)+"'})-[:Reviewed]-(connected) Return connected.customer_id"
+
+def testable_query(id,depth):
+    return  "MATCH (a:Products{id : '"+str(id)+"'}) "\
+            "WITH id(a) AS startNode "\
+            "CALL gds.alpha.dfs.stream('myGraph', {startNode: startNode, maxDepth: "+str(depth)+"}) "\
+            "YIELD path "\
+            "UNWIND [ n in nodes(path) | n.id ] AS ids "\
+            "RETURN ids"
