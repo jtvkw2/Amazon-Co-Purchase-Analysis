@@ -96,8 +96,9 @@ class AmazonApp(QMainWindow):
                     temp_nodes = recDB.write_transaction(self._search, qg.dfs_query(int(self.current_search[i])))
                     if temp_nodes:
                         temp_list = self.recordToList(temp_nodes, 'ids', type)
-                        inter = curr_nodes.intersection(temp_list)
-                        all_nodes_id = list(inter)
+                        for n in temp_list:
+                            curr_nodes.add(n)
+                        all_nodes_id = list(curr_nodes)
 
                 final_data = []
                 for id in all_nodes_id:
